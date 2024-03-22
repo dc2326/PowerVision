@@ -1,0 +1,18 @@
+* Netlist 4, Current Dependent Current Sources
+
+* Sources
+V1 A 0 120;
+F1 A V2 Vmtr 5; Current Dependent Current Source with gain of 5
+
+* Metering Sources
+Vmtr 99 V1 0;
+
+* Resistors
+R1 A V1 3k;
+R2 V1 0 8k;
+R3 V2 99 1meg;
+R4 V2 0 5k;
+
+* Directives
+.op;
+

@@ -1,0 +1,27 @@
+* LTspice Test Netlist 2
+
+* Circuit Schematic
+* 
+*    ______ 1 __ __R__
+*   |     |     |     |
+*   R     R     I ^   R
+*   |_____|_____|_____|
+*   
+*
+
+* Sources
+I1 0 99 15u; 15 uA Current source. Note that current flows from + terminal to - terminal
+
+* Resistors
+R1 1 0 1meg; 1 MOhm resistor, note lowercase m is milli, mega is meg
+R2 1 0 4meg; 4 MOhm resistor
+R3 99 2 200k; 200 kOhm resistor
+R4 2 0 600k; 600 kOhm resistor
+
+* Let's measure current across branch 1
+* We add a 0V source
+* Metering Sources
+Vmtr 1 99 0; Metering source used to measure branch 1
+
+* Directives
+.op ; Operating point DC analysis
