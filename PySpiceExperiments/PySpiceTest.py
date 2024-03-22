@@ -31,13 +31,13 @@ circuit.R(1, 'in', 'out', 9@u_kOhm)
 circuit.R(2, 'out', circuit.gnd, 1@u_kOhm)
 
 # Print Circuit netlist
-#print("The Circuit/Netlist:\n\n", circuit)
+print("The Circuit/Netlist:\n\n", circuit)
 
 # Creates simulator object
 simulator = circuit.simulator(temperature=25, nominal_temperature=25)
 
 # Prints simulator details
-#print("The Simulator:\n\n", simulator)
+print("The Simulator:\n\n", simulator)
 
 # Run analysis
 analysis = simulator.operating_point()
