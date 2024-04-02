@@ -1,0 +1,18 @@
+* LTspice Boost Converter Example
+
+V1 1 0 12
+L1 1 2 10u
+M1 2 3 0 0 mosfet
+D1 2 4 diode
+C1 4 0 100u
+R1 4 0 1
+
+V2 3 0 PULSE(0 15 0 0 0 5u 10u); PULSE(Vinit, Von, Tdelay, Trise, Tfall, Ton, Tperiod, Ncycles)
+
+.model mosfet NMOS(Kp=60 Vto=4.5)
+
+.model diode D
+
+.backanno; annotate stuff
+.tran 1m; transient time
+.end
