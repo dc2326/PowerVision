@@ -2,7 +2,7 @@ from datetime import datetime
 
 class NetListFile:
 
-    def __init__(self, fileName = datetime.now().strftime("%d%m%Y_%H%M%S")+".cir"):
+    def __init__(self, fileName = datetime.now().strftime("%d%m%Y_%H%M%S")+".net"):
         self.netName = fileName
         try:
             self.file = open(self.netName,"xt")
@@ -15,6 +15,9 @@ class NetListFile:
         self.file = open(self.netName, 'wt')
         print(contents, file=self.file)
         self.file.close()
+
+    def name(self):
+        return self.netName
     
 
 

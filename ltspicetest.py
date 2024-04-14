@@ -1,4 +1,5 @@
 # Code from: https://www.youtube.com/watch?v=nv9xDpM30Ig&ab_channel=LandonBallard
+# And example from: https://github.com/nunobrum/PyLTSpice
 
 from PyLTSpice import SimCommander, RawRead
 import numpy as np
