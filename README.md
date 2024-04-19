@@ -13,10 +13,10 @@ Currently this software is optimized for planar circuits that do not have transf
 
 2. TensorFlow: 
 
-        If your computer has an NVIDIA GPU:
+        // If your computer has an NVIDIA GPU:
         pip install tensorflow[and-cuda]
 
-        If not:
+        // If not:
         pip install tensorflow
 
 3. OpenCV and other important libraries:
