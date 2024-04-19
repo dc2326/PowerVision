@@ -1,6 +1,5 @@
 from datetime import datetime
 from PyLTSpice import SimCommander, RawRead
-import numpy as np
 import os
 import matplotlib.pyplot as plt
 
@@ -125,7 +124,7 @@ class NetList:
         self.writeNet(comp, sources, drivers)
 
     # Creates and returns a PWM voltage node
-    def makeDriver(self, ref, delay="0", ontime="5u", period="10u"):
+    def makeDriver(self, ref, delay="0", offtime="3u", period="10u"):
         # Keeps track of the number of driver nodes
         d_count = self.driver_node_count
         self.driver_node_count += 1
@@ -139,8 +138,8 @@ class NetList:
         self.components["Vdrv"] = self.components["Vdrv"] + 1
 
         # Create pulse command
-        pulse = "PULSE(0 20 {Tdelay} 0 0 {Ton} {Tperiod})".format\
-            (Tdelay = delay, Ton = ontime, Tperiod = period)
+        pulse = "PULSE(20 0 {Tdelay} 0 0 {Ton} {Tperiod})".format\
+            (Tdelay = delay, Ton = offtime, Tperiod = period)
 
         # Assemble command
         stub = "Vdrv" + str(self.components["Vdrv"]) + " p" + str(d_count) + " " + str(ref) + " " + pulse
@@ -186,7 +185,7 @@ class NetList:
 
 
         # Simulation cmd
-        print("\n.tran 5    m", file=n_file)
+        print("\n.tran 5m", file=n_file)
 
         # End the netlist
         print("\n.end", file=n_file)
@@ -212,11 +211,12 @@ class NetList:
         meAbsPath = os.path.dirname(os.path.realpath(__file__))
         
         # Set up LTSpice and run simulation
-        LTC = SimCommander(meAbsPath + "\\" + self.netlist + ".net")  
+        LTC = SimCommander(meAbsPath + "/" + self.netlist + ".net")  
         LTC.run()
         LTC.wait_completion()
 
         # Parse the rawfile beforehand and save it
+        print(self.netlist+"_1.raw")
         self.rawfile = RawRead(self.netlist + "_1.raw")
 
         # Create empty list to store measurement data
@@ -231,7 +231,7 @@ class NetList:
         t = self.rawfile.get_trace('time')
         steps = self.rawfile.get_steps()
 
-        self.traces=['V(3)', 'V(1)']
+        self.traces=['V(4)', 'V(1)']
 
         for step in range(len(steps)):
             for mtr in range(len(self.traces)):
