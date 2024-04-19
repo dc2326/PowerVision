@@ -2,10 +2,11 @@ from netlistbuilder import NetList
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage import morphology, measure
+from skimage import morphology
 import os
 import tensorflow as tf
 import sys
+import re
 
 # ------------------------ Step 1: Image processing -----------------
 # Image resizing helper function
@@ -79,7 +80,7 @@ def detect_components(img_skel, SE):
     img_blob = cv2.morphologyEx(img_close,cv2.MORPH_OPEN, kernel_erode,iterations=1)
     contours, _ = cv2.findContours(img_blob, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     components = []
-    for i, c in enumerate(contours):
+    for _, c in enumerate(contours):
         x, y, w, h = cv2.boundingRect(c)
         # threshold for 50x50 structuring element
         if(w > SE or h > SE):
@@ -283,7 +284,7 @@ def get_orientation(device, img, focus):
         comp = 'D'
         data = []
         if ((con[TOP] == 1) and (con[BOTTOM] == 1)):
-          for i in range(h):
+          for i in range(0, h, (int)(h/4)):
             running_sum = 0
             for j in range(w):
               running_sum += crop[i, j]/255
@@ -295,7 +296,7 @@ def get_orientation(device, img, focus):
           else:
             direction = 'n'
         elif ((con[LEFT] == 1) and (con[RIGHT] == 1)):
-          for i in range(w):
+          for i in range(0, w, (int)(w/4)):
             running_sum = 0
             for j in range(h):
               running_sum += crop[j, i]/255
@@ -403,9 +404,8 @@ def classify(img_norm, img_skel, components, model_path):
         # get predicted label for component
         component = comp['type']
         orientation = comp['orientation']
-        confidence = comp['confidence']
         # add labels above bounding boxes
-        cv2.putText(img, f'{component},{orientation},{confidence:.2f}', (x, y-12), FONT_FACE, FONT_SCALE, COLOR, 1)
+        cv2.putText(img, f'{component},{orientation}', (x, y-12), FONT_FACE, FONT_SCALE, COLOR, 1)
     
     # Uncomment both lines to see the image
     # Image must be closed for program to continue
@@ -433,7 +433,7 @@ def node_detect(img_tres, predictions):
 
     PADDING = 10
 
-    for i,square in enumerate(predictions):
+    for _,square in enumerate(predictions):
         y,h,x,w = square['location']
         cv2.rectangle(img_nodes_rect,
                     (x-PADDING,y-PADDING),(w+PADDING,h+PADDING),
@@ -578,6 +578,50 @@ def matrix_gen(img_nodes_dilate, predictions, img_norm):
     return incimatrix, dev
 
 
+# ------------------------- Misc. -------------------------------
+def sentence_process(sentence):
+    # Delay, offtime, period
+    DELAY = 0
+    OFFTIME = 1
+    PERIOD = 2
+
+    period = -1
+    duty = -1    
+    
+    parameters = ["0", "3u", "10u"]
+    sentence = sentence.lower()
+    nums = re.findall(r'\d+\.\d+|\d+', sentence)
+
+
+    for i in range(len(nums)):
+        thing = sentence.split(nums[i])
+        thing = thing[1].split(' ')
+        thing = thing[0].split(',')[0]
+
+        if (thing.find('hz') > -1):
+            prefix = thing.split('hz')[0]
+            if (prefix == 'k'):
+                period = round(1000.0/((float)(nums[i])), 5)
+            elif (prefix == 'm'):
+                period = round(1.0/((float)(nums[i])), 5)
+            else:
+               print("Sorry, I'm afraid I don't understand.")
+               exit(-1)
+        elif (thing.find('%') > -1):
+            duty = (100.0-((float)(nums[i])))/100.0
+        else:
+           parameters[DELAY] = thing.split(' ')[0].split(', ')[0]
+
+    if ((period < 0) or (duty < 0)):
+       print("Not enough information, aborting...")
+       exit(-1)
+    
+    parameters[PERIOD] = str(period) + 'u'
+    parameters[OFFTIME] = str(duty*period) + 'u'
+
+    return parameters
+
+
 # Main function
 def main():
     # Prompt user for schematic
@@ -603,11 +647,39 @@ def main():
     wiring_matrix, comp_matrix = matrix_gen(nodes, pre, img)
     wiring_matrix = wiring_matrix.tolist()
 
+    # Prompt user to set simulation parameters
+    if (comp_matrix.count('M') > 0):
+       print("I see that you have MOSFETs in this circuit, please tell me how you want to drive them.")
+       print("Please specify duty cycle (Ex: 50%), frequency (Ex: 1khz or 5Mhz), and phase shift (in sec: 5n, 3m, etc. You can also specify nothing if no phase shift) for each MOSFET that is shown.")
+       print("Close out each picture before proceeding.")
+       
+       in_d = 'n'
+       while(in_d == 'n'):
+          in_d = input("Ready (y/n)? ")
+
+       param = []
+
+       for comp in pre:
+          img_copy = skel.copy()
+          if (comp['type'] == 'M'):
+            y,h,x,w = comp['location']
+            img_overlay = np.ones_like(img[y:h,x:w])*255
+            cv2.rectangle(img_overlay, (0, 0), (w, h), (0, 255, 0), -1)
+            cv2.rectangle(img_copy, (x, y), (w, h), (0, 255, 0), 2)
+            img_copy[y:h,x:w] = cv2.addWeighted(img[y:h,x:w], 1, img_overlay, 0.1, 0)
+            plt.imshow(img_copy)
+            plt.show()
+            specs = input("How do you want to drive this MOSFET (Ex: I want to drive it at 100khz, 50%, 0n)? ")
+            param.append(sentence_process(specs))
+
+    time = input("How long do you want to run the simulation for (Ex: 5m)? ")
+
     # Step 6
     net = NetList(leimg.split('.')[0].split('/')[-1])
-    net.generate(wiring_matrix, comp_matrix)
+    net.generate(wiring_matrix, comp_matrix, param, time)
 
     # Step 7
+    print("Now plotting input voltage and output voltage...")
     net.run()
     net.plot()
 

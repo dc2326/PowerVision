@@ -2,6 +2,7 @@ from datetime import datetime
 from PyLTSpice import SimCommander, RawRead
 import os
 import matplotlib.pyplot as plt
+import glob
 
 class NetList:
 
@@ -11,6 +12,11 @@ class NetList:
 
         # Variable to keep track of number of extra drivers automatically added
         self.driver_node_count = 1
+
+        # Clean up old files
+        ext = self.netlist+"_1.*"
+        for f in glob.glob(ext):
+            os.remove(f)
 
         file = open(self.netlist+".net","w")
         file.close()
@@ -31,7 +37,8 @@ class NetList:
     # {V, R, M, R, R, C, ...}
     # Use device matrix to figure out what devices 1, 2, 3, etc.
     # coorespond to.
-    def generate(self, con_matrix, dev_matrix):
+    # Param specifies duty cycle and frequency that MOSFETs are driven
+    def generate(self, con_matrix, dev_matrix, param, time):
 
         # List of netlist non-source components
         comp = []
@@ -48,6 +55,13 @@ class NetList:
         # Flag set if mosfet or diode model needs to be added
         self.add_mosfet = False
         self.add_diode = False
+
+        # traces to plot
+        self.traces_in = []
+        self.traces_out = []
+
+        # Keep track of where in param we are
+        self.param_ptr = 0
 
         # Get total number of devices
         total_devices = len(con_matrix)
@@ -73,6 +87,12 @@ class NetList:
             self.components[x] = self.components[x] + 1
             temp = x + str(self.components[x]) + ' '
 
+            if ((x == 'V') and (self.components[x] == 1)):
+                self.traces_in.append("V("+str(con_matrix[i].index(1))+")")
+            
+            if ((x == 'R') and (self.components[x] == 1)):
+                self.traces_out.append("V("+str(con_matrix[i].index(1))+")")
+
             # Make the device connections
             j = 0
             while True:
@@ -89,7 +109,9 @@ class NetList:
 
                     # If a pin needs to be driven, chances are it's a MOSFET, so add appropriate driver
                     if (node == total_nodes-1):
-                        node, output = self.makeDriver(con_matrix[i].index(j+1))
+                        delay, offtime, period = param[self.param_ptr]
+                        self.param_ptr += 1
+                        node, output = self.makeDriver(con_matrix[i].index(j+1), delay, offtime, period)
                         drivers.append(output)
 
                     temp = temp + str(node) + ' '
@@ -104,7 +126,7 @@ class NetList:
                 self.add_diode = True
                 temp = temp + "diode"
             else:
-                # FIXME: Add component values
+                # Add component values, for now use default values
                 if (x == 'V'):
                     temp = temp + "5"
                 elif (x == 'R'):
@@ -121,9 +143,10 @@ class NetList:
                 comp.append(temp)
 
         # Write to cmds to file
-        self.writeNet(comp, sources, drivers)
+        self.writeNet(comp, sources, drivers, param, time)
 
     # Creates and returns a PWM voltage node
+    # Pulse is ON first (V1 = HIGH, V2 = LOw), so "offtime" is used instead of ontime
     def makeDriver(self, ref, delay="0", offtime="3u", period="10u"):
         # Keeps track of the number of driver nodes
         d_count = self.driver_node_count
@@ -147,7 +170,7 @@ class NetList:
         return "p"+str(d_count), stub
     
     # Write the cmds to the netlist
-    def writeNet(self, comp, sources, drivers):
+    def writeNet(self, comp, sources, drivers, param, time):
         n_file = open(self.netlist+".net", 'w')
 
         len_comp = len(comp)
@@ -185,7 +208,7 @@ class NetList:
 
 
         # Simulation cmd
-        print("\n.tran 5m", file=n_file)
+        print("\n.tran " + time, file=n_file)
 
         # End the netlist
         print("\n.end", file=n_file)
@@ -216,26 +239,21 @@ class NetList:
         LTC.wait_completion()
 
         # Parse the rawfile beforehand and save it
-        print(self.netlist+"_1.raw")
         self.rawfile = RawRead(self.netlist + "_1.raw")
 
         # Create empty list to store measurement data
         self.traces = []
-
-    # FIXME: Grab the voltage or current trace for a certain component
-    # def grab(self, measurement, device):
-    #     self.traces.append(self.rawfile.get_trace())
 
     # Plot all the values grabbed
     def plot(self):
         t = self.rawfile.get_trace('time')
         steps = self.rawfile.get_steps()
 
-        self.traces=['V(4)', 'V(1)']
+        #self.traces=['V(3)', 'V(2)']
 
         for step in range(len(steps)):
-            for mtr in range(len(self.traces)):
-                plt.plot(t.get_wave(step), self.rawfile.get_trace(self.traces[mtr]).get_wave(step), label=self.traces[mtr])
+                plt.plot(t.get_wave(step), self.rawfile.get_trace(self.traces_in[0]).get_wave(step), label="Vin")
+                plt.plot(t.get_wave(step), (self.rawfile.get_trace(self.traces_out[0]).get_wave(step)), label="Vout")
 
         plt.legend()
         plt.show()
