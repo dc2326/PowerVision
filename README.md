@@ -55,7 +55,7 @@ Currently this software is optimized for planar circuits that do not have transf
 
         python powervision.py
 
-5. Follow the instructions.
+5. Follow the instructions, try it out with the provided examples in the example folder.
 
 
 # How it works:
