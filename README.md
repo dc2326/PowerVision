@@ -1,5 +1,7 @@
 # PowerVision
 
+![alt text](POWERVISION.png)
+
 A piece of software that reads a schematic, turns it into a SPICE netlist, and simulates it.
 
 Currently this software is optimized for planar circuits that do not have transformers.
