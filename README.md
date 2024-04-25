@@ -1,5 +1,7 @@
 # PowerVision
 
+![alt text](POWERVISION.png)
+
 A piece of software that reads a schematic, turns it into a SPICE netlist, and simulates it.
 
 Currently this software is optimized for planar circuits that do not have transformers.
@@ -7,29 +9,7 @@ Currently this software is optimized for planar circuits that do not have transf
 
 # Requirements:
 
-1. PyLTSpice:
-
-        pip install PyLTSpice
-
-2. TensorFlow: 
-
-        // If your computer has an NVIDIA GPU:
-        pip install tensorflow[and-cuda]
-
-        // If not:
-        pip install tensorflow
-
-3. OpenCV and other important libraries:
-
-        pip install opencv-python numpy matplotlib
-        pip install scikit-image
-        pip install imutils
-
-4. LTSpice:
-
-        https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html
-
-5. Virtual Environment:
+1. Virtual Environment:
 
         pip install virtualenv
         python -m venv powervision
@@ -39,6 +19,30 @@ Currently this software is optimized for planar circuits that do not have transf
 
         * To deactivate venv:
         deactivate
+
+2. PyLTSpice:
+
+        pip install PyLTSpice
+
+3. TensorFlow: 
+
+        // If your computer has an NVIDIA GPU:
+        pip install tensorflow[and-cuda]
+
+        // If not:
+        pip install tensorflow
+
+4. OpenCV and other important libraries:
+
+        pip install opencv-python numpy matplotlib
+        pip install scikit-image
+        pip install imutils
+
+5. LTSpice:
+
+        https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html
+
+
 
 
 # How to use PowerVision

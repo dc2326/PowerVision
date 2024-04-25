@@ -1,4 +1,3 @@
-from datetime import datetime
 from PyLTSpice import SimCommander, RawRead
 import os
 import matplotlib.pyplot as plt
@@ -7,7 +6,7 @@ import glob
 class NetList:
 
     # Make a new Netlist and name it using the date and time
-    def __init__(self, fileName = datetime.now().strftime("%d%m%Y_%H%M%S")):
+    def __init__(self, fileName = "default_netlist"):
         self.netlist = fileName
 
         # Variable to keep track of number of extra drivers automatically added
@@ -16,6 +15,10 @@ class NetList:
         # Clean up old files
         ext = self.netlist+"_1.*"
         for f in glob.glob(ext):
+            os.remove(f)
+            
+        ext2 = self.netlist+".*"
+        for f in glob.glob(ext2):
             os.remove(f)
 
         file = open(self.netlist+".net","w")
